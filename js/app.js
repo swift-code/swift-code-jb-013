@@ -24,32 +24,70 @@ app.config(function($routeProvider){
 });
 
 app.controller('dashboardCtrl', ['$scope', '$location','$http',function($scope,$location,$http){
-  $scope.dashboard= function(){
-    var request = $http({
-      method: "POST",
-      url: URL+"dashboard",
-      data: {firstName:$scope.firstName,lastName:$scope.lastName,company:$scope.company}
-    });
-    request.success(function(data){
-      var response = angular.fromJson(data);
-      if(response["error"])
-      {
-        $scope.validationMessage = response["message"][0];//custom message or backend response
-      }
-      else{
-        sessionStorage.userId = response["id"];
-        sessionStorage.firstName = response["firstName"];
-        sessionStorage.lastName = response["lastName"];
-        sessionStorage.company = response["company"];
 
-        $location.url('/dashboard');
-      }
+  $scope.getProfileData = function(){
+      var request = $http({
+      method: "GET",
+      url: URL+"profile/"+sessionStorage.userId
+
     });
-    request.error(function(){
-      var response = console.log(data);
+
+    request.success(function(data){
+      $scope.profileData = angular.fromJson(data);
+      console.log(data);
+    });
+    request.error(function(data){
+      console.log(data);
     });
   }
+  $scope.getProfileData();
+
+  $scope.updateProfile= function(){
+    delete $scope.profileData["connectionRequests"];
+    delete $scope.profileData["connections"]
+    delete $scope.profileData["suggestions"]
+    var request = $http({
+      method: "PUT",
+      url: URL+"profile/"+sessionStorage.userId,
+      data: $scope.profileData
+    });
+    request.success(function(data){
+      $scope.responseMessage="Update Successful";
+      $("#dashboardMsgModal").modal('show');
+      $scope.getProfileData();
+    });
+    request.error(function(data){
+      console.log(data);
+    })
+  }
+  $scope.sendConnectionRequest = function(reciverId){
+    var request = $http({
+      method: "POST",
+      url: URL+"request/send/"+sessionStorage.userId+"/"+reciverIda
+    });
+    request.success(function(data){
+      $scope.responseMessage = "Your request has been sent ";
+      $("#dashboardMsgModal").modal('show');
+      $scope.getProfileData();
+    });
+  }
+  $scope.acceptRequest = function(reciverId){
+    var request = $http({
+      method: "POST",
+      url: URL+"request/accept/"+reciverId
+    });
+    request.success(function(data){
+      $scope.responseMessage = "The request was accepted ";
+      $("#dashboardMsgModal").modal('show');
+      $scope.getProfileData();
+    });
+  }
+  $scope.logout = function(){
+    sessionStorage.clear();
+    $location.path("/");
+  }
 }]);
+
 
 app.controller('loginCtrl', ['$scope', '$location','$http',function($scope,$location,$http){
   $scope.login = function(){
